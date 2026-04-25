@@ -1,13 +1,11 @@
 import os
-import shutil 
+import sys
 
-from textnode import TextNode, TextType
-from htmlnode import HTMLNode, LeafNode, ParentNode
 from utils import copytree, extract_title
 from markdown_to_html import markdown_to_html_node
 
 
-def generate_page(from_path, template_path, dst_path):
+def generate_page(from_path, template_path, dst_path, basepath="/"):
     if not os.path.exists(from_path):
         raise ValueError(f"Markdown file not found at {from_path}")
     if not os.path.exists(template_path):
@@ -25,6 +23,7 @@ def generate_page(from_path, template_path, dst_path):
     content = markdown_to_html_node(markdown).to_html()
 
     html = template.replace("{{ Content }}", content).replace("{{ Title }}", title)
+    html = html.replace('href="/', f'href="{basepath}').replace('src="/', f'src="{basepath}')
 
     dest_parent = os.path.dirname(dst_path)
     if not os.path.exists(dest_parent):
@@ -34,7 +33,7 @@ def generate_page(from_path, template_path, dst_path):
         f.write(html)
 
 
-def generate_pages_recursive(dir_path_content, template_path, dst_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dst_dir_path, basepath="/"):
     if not os.path.exists(dir_path_content):
         raise ValueError(f"content directory not found at {dir_path_content}")
     if not os.path.isdir(dir_path_content):
@@ -49,22 +48,24 @@ def generate_pages_recursive(dir_path_content, template_path, dst_dir_path):
         if os.path.isfile(item_path) and os.path.splitext(item_path)[1] == ".md":
             html_item = os.path.splitext(item)[0] + ".html"
             dst_file_path = os.path.join(dst_dir_path, html_item)
-            generate_page(item_path, template_path, dst_file_path)
+            generate_page(item_path, template_path, dst_file_path, basepath)
         elif os.path.isdir(item_path):
             new_dst_dir_path = os.path.join(dst_dir_path, item)
-            generate_pages_recursive(item_path, template_path, new_dst_dir_path)
+            generate_pages_recursive(item_path, template_path, new_dst_dir_path, basepath)
 
 
 def main():
+    basepath = "/" if len(sys.argv) < 2 else sys.argv[1]
+
     static_dir = "./static"
-    public_dir = "./public"
+    public_dir = "./docs"
     copytree(static_dir, public_dir)
 
     dir_path_content = "content"
     template_path = "template.html"
-    dest_dir_path = "public"
+    dest_dir_path = "docs"
 
-    generate_pages_recursive(dir_path_content, template_path, dest_dir_path)
+    generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath)
 
 
 if __name__ == "__main__":

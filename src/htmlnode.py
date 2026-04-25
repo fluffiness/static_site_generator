@@ -58,7 +58,7 @@ class ParentNode(HTMLNode):
     def __init__(
             self,
             tag: str,
-            children: List[Self],
+            children: List[HTMLNode],
             props: Optional[Dict[str, str]]=None
         ):
         super().__init__(tag=tag, children=children, props=props)
